@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	<constant name="struts.enable.DynamicMethodInvocation" value="false" />
+	<constant name="struts.devMode" value="true" />
+	<!-- action路径的扩展名：*.action,*.do,无扩展名 -->
+	<constant name="struts.action.extension" value="action,do," />
+
+	<package name="com.dx.ssh.manage.action" extends="struts-default">
+		<interceptors>
+			<interceptor name="login" class="com.dx.ssh.interceptor.LoginInterceptor">
+			</interceptor>
+			<interceptor-stack name="myStack">
+				<interceptor-ref name="defaultStack"></interceptor-ref>
+				<interceptor-ref name="login"></interceptor-ref>
+			</interceptor-stack>
+		</interceptors>
+		<default-interceptor-ref name="myStack"></default-interceptor-ref>		
+		<default-action-ref name="main"></default-action-ref>	
+		<global-results>
+			<result name="login">/admin_desktop/login.jsp</result>
+		</global-results>
+		<action name="main">
+			<result>/admin_desktop/index.jsp</result>
+		</action>
+
+		<action name="AdminUserAction_*" class="AdminUserAction" method="{1}">
+			<result name="edit">/admin_desktop/user_edit.jsp</result>
+			<!-- <result name="list">/admin_desktop/user_list.jsp</result> -->
+		</action>
+		<action name="AdminLogAction_*" class="AdminLogAction" method="{1}">
+			<result name="list">/admin_desktop/log_list.jsp</result>
+		</action>
+		<action name="AdminArticleCategoryAction_*" class="AdminArticleCategoryAction" method="{1}">
+			<result name="list">/admin_desktop/article_category_list.jsp</result>
+			<result name="edit">/admin_desktop/article_category_edit.jsp</result>
+			<result name="success" type="redirectAction">AdminArticleCategoryAction_list</result>
+		</action>
+		<action name="AdminArticleAction_*" class="AdminArticleAction" method="{1}">
+			<result name="list">/admin_desktop/article_list.jsp</result>
+			<result name="edit">/admin_desktop/article_edit.jsp</result>
+			<result name="success" type="redirectAction">AdminArticleAction_list</result>
+		</action>
+	</package>
+	<package name="com.dx.ssh.action" namespace="/" extends="struts-default">
+			
+		<action name="UserAction_*" class="UserAction" method="{1}">
+			<result name="login">/admin_desktop/login.jsp</result>
+			<result name="success" type="redirectAction">main</result>
+			<result name="error">/admin_desktop/login.jsp</result>
+			<result name="register">/admin_desktop/register.jsp</result>
+			<result name="register_success">/admin_desktop/login.jsp</result>
+			<result name="register_error">/admin_desktop/register.jsp</result>
+		</action>
+		<action name="IndexAction_*" class="IndexAction" method="{1}">
+			<result name="success">/blog_index.jsp</result>
+		</action>
+	</package>
+
+
+</struts>

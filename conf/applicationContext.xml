@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties"
+		file-encoding="utf-8" ignore-unresolvable="true" />
+
+	<!-- 配置数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driverClassName}"></property>
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<property name="user" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+		<property name="testConnectionOnCheckout" value="${jdbc.c3p0.testConnectionOnCheckout}"></property>
+		<property name="testConnectionOnCheckin" value="${jdbc.c3p0.testConnectionOnCheckin}"></property>
+		<property name="idleConnectionTestPeriod" value="${jdbc.c3p0.idleConnectionTestPeriod}"></property>
+		<property name="initialPoolSize" value="${jdbc.c3p0.initialPoolSize}"></property>
+		<property name="minPoolSize" value="${jdbc.c3p0.minPoolSize}"></property>
+		<property name="maxPoolSize" value="${jdbc.c3p0.maxPoolSize}"></property>
+		<property name="maxIdleTime" value="${jdbc.c3p0.maxIdleTime}"></property>
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!-- 数据源dataSource -->
+		<property name="dataSource" ref="dataSource" />
+
+		<!-- hibernate的配置方案一 -->
+		<!-- <property name="configLocation" value="classpath:hibernate.cfg.xml"></property> -->
+		<!-- hibernate的配置方案二 -->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+				<prop key="hibernate.temp.use_jdbc_metadata_defaults">false</prop>
+			</props>
+		</property>
+
+		<!-- 持久化类的位置方案一，通过包进行扫描 -->
+		<!-- <property name="mappingLocations" value="classpath:com/dx/ssh/entities/*.hbm.xml"></property> -->
+		<!-- spring的spring.jar的jar包内，在org.springframework.orm.hibernate3.annotation下， 
+			有一个AnnotationSessionFactoryBean类，其中有一个属性叫做"packagesToScan"， 有个方法叫setpackagesToScan()， 
+			也就是说我可以再spring里面将这个属性给设定上。 packagesToScan是"包扫描"的意思，哪些包spring可以给我们扫描一下，看看有哪些实体类， 
+			这一项在我们在配置文件中配置hibernate的实体类的时候可以这么配，只要给出具体的扫描范围就可以了， 不需要将实体类一个一个的写出来 -->
+		<!-- 持久化类的位置方案二，通过包进行扫描 -->
+		<property name="packagesToScan">
+			<list>
+				<value>com.dx.ssh.entity</value>
+			</list>
+		</property>
+		<!-- 持久化类的位置方案三，通过类进行扫描 <property name="annotatedClasses"> <list> <value>com.dx.ssh.entity.UserEntity</value> 
+			<value>com.dx.ssh.entity.PageViewEntity</value> <value>com.dx.ssh.entity.LogEntity</value> 
+			<value>com.dx.ssh.entity.ArticleCategoryEntity</value> </list> </property> -->
+	</bean>
+
+	<!-- 配置Hibernate事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<!-- 配置事务的传播特性 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="del*" propagation="REQUIRED" />
+			<tx:method name="modify*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="register" propagation="REQUIRED" />
+			<tx:method name="create*" propagation="REQUIRED" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="fetch*" read-only="true" />
+			<tx:method name="query*" read-only="true" />
+			<tx:method name="login*" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- 哪些类的哪些方法参与事务 -->
+	<aop:config proxy-target-class="true">
+		<!-- 通过aop定义事务增强切面 -->
+		<aop:pointcut id="serviceMethod"
+			expression="(execution(* com.dx.ssh.filter..*.*(..))) or (execution(* com.dx.ssh.service..*.*(..)))" />
+		<!-- 引用事务增强 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="serviceMethod" />
+	</aop:config>
+
+	<!--##########################JAVA BEAN############################################## 
+		##########################JAVA BEAN############################################## 
+		##########################JAVA BEAN############################################## -->
+	<bean id="baseDao" class="com.dx.ssh.dao.BaseDaoImpl" abstract="true">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="userBean" class="com.dx.ssh.entity.UserEntity" />
+
+	<bean id="userDao" class="com.dx.ssh.dao.UserDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="pageViewDao" class="com.dx.ssh.dao.PageViewDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="logDao" class="com.dx.ssh.dao.LogDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="articleCategoryDao" class="com.dx.ssh.dao.ArticleCategoryDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="articleDao" class="com.dx.ssh.dao.ArticleDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+	<bean id="commonDao" class="com.dx.ssh.dao.CommonDaoImpl">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory" />
+		</property>
+	</bean>
+
+	<!--在userServiceImpl中注入userDao -->
+	<bean id="userService" class="com.dx.ssh.service.UserServiceImpl">
+		<property name="userDao" ref="userDao"></property>
+	</bean>
+	<bean id="pageViewService" class="com.dx.ssh.service.PageViewServiceImpl">
+		<property name="pageViewDao" ref="pageViewDao"></property>
+	</bean>
+	<bean id="logService" class="com.dx.ssh.service.LogServiceImpl">
+		<property name="logDao" ref="logDao"></property>
+	</bean>
+	<bean id="articleCategoryService" class="com.dx.ssh.service.ArticleCategoryServiceImpl">
+		<property name="articleCategoryDao" ref="articleCategoryDao"></property>
+	</bean>
+	<bean id="articleService" class="com.dx.ssh.service.ArticleServiceImpl">
+		<property name="articleDao" ref="articleDao"></property>
+		<property name="articleCategoryDao" ref="articleCategoryDao"></property>
+	</bean>
+	<bean id="commonService" class="com.dx.ssh.service.CommonServiceImpl">
+		<property name="commonDao" ref="commonDao"></property>
+	</bean>
+	<!-- <bean id="viewResolver"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="contentType" value="text/html;charset=utf-8" />
+		<property name="cache" value="true" />
+		<property name="suffix" value=".ftl" />
+		<property name="order" value="0" />
+		<property name="requestContextAttribute" value="request" />
+	</bean>
+	 -->
+	<bean id="articleFilter" class="com.dx.ssh.filter.ArticleFilter">
+		<property name="articleService" ref="articleService"></property>
+	</bean>
+	<bean id="ArticleFilter" class="com.dx.ssh.filter.ArticleFilter">
+		<property name="articleService" ref="articleService"></property>
+	</bean>
+	<bean id="UserAction" class="com.dx.ssh.action.UserAction">
+		<property name="userService" ref="userService"></property>
+		<property name="userBean" ref="userBean"></property>
+	</bean>
+	<bean id="AdminUserAction" class="com.dx.ssh.action.AdminUserAction">
+		<property name="userService" ref="userService"></property>
+		<property name="logService" ref="logService"></property>
+	</bean>
+	<bean id="AdminLogAction" class="com.dx.ssh.action.AdminLogAction">
+		<property name="logService" ref="logService"></property>
+	</bean>
+	<bean id="AdminArticleCategoryAction" class="com.dx.ssh.action.AdminArticleCategoryAction">
+		<property name="articleCategoryService" ref="articleCategoryService"></property>
+		<property name="logService" ref="logService"></property>
+	</bean>
+	<bean id="AdminArticleAction" class="com.dx.ssh.action.AdminArticleAction">
+		<property name="articleCategoryService" ref="articleCategoryService"></property>
+		<property name="articleService" ref="articleService"></property>
+		<property name="userService" ref="userService"></property>
+		<property name="logService" ref="logService"></property>
+	</bean>
+	<bean id="IndexAction" class="com.dx.ssh.action.IndexAction">
+		<property name="articleCategoryService" ref="articleCategoryService"></property>
+		<property name="articleService" ref="articleService"></property>
+	</bean>
+</beans>

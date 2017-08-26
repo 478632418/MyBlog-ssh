@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	id="WebApp_ID" version="3.0">
+	<display-name>My-SSH-Blog</display-name>
+
+	<welcome-file-list>
+		<welcome-file>/index.jsp</welcome-file>
+	</welcome-file-list>
+
+	<error-page>
+		<error-code>404</error-code>
+		<location>/public/404.html</location>
+	</error-page>
+	<error-page>
+		<error-code>500</error-code>
+		<location>/public/500.html</location>
+	</error-page>
+
+	<!-- html请求过滤器 -->
+	<filter>
+		<filter-name>articleFilter</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+		<init-param>
+			<param-name>targetFilterLifecycle</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>articleFilter</filter-name>
+		<url-pattern>*.html</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>articleFilter</filter-name>
+		<url-pattern>*.htm</url-pattern>
+	</filter-mapping>
+
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath:applicationContext*.xml</param-value>
+	</context-param>
+
+	<!-- 监听session，在线人员信息（登录账户，不包括访客和前台在线用户） -->
+	<listener>
+		<listener-class>com.dx.ssh.listener.SessionListener</listener-class>
+	</listener>
+	<!-- Bootstraps the root web application context before servlet initialization -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+
+	<!-- Struts2 filter -->
+	<filter>
+		<filter-name>struts2</filter-name>
+		<filter-class>org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>struts2</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<session-config>
+		<session-timeout>30</session-timeout>
+	</session-config>
+</web-app>
